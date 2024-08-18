@@ -154,9 +154,16 @@ export const api = async (req, res) => {
         }
 case 'Handoff Human': {
   console.log('Handoff human trace received');
-  const payload = JSON.parse(trace.payload);
-  if (payload.type === 'transferCall') {
-    console.log('Transfer call triggered');
+  console.log('Payload:', trace.payload);
+  try {
+    const payloadObj = JSON.parse(trace.payload);
+    if (payloadObj.type === 'transferCall') {
+      console.log('Transfer call triggered');
+      shouldTransferCall = true;
+    }
+  } catch (error) {
+    console.error('Error parsing payload:', error);
+    // Fallback: Wenn das Parsen fehlschlägt, nehmen wir an, dass eine Weiterleitung gewünscht ist
     shouldTransferCall = true;
   }
   break;
@@ -167,33 +174,33 @@ case 'Handoff Human': {
       }
     }
     
-    if (shouldTransferCall) {
-      console.log('Attempting to transfer call');
-      const transferChunk = {
-        id: chatId,
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: 'dmapi',
-        choices: [
-          {
-            index: 0,
-            delta: {
-              content: null,
-              function_call: {
-                name: 'transferCall',
-                arguments: JSON.stringify({
-                  destination: process.env.FORWARDING_PHONE_NUMBER
-                })
-              }
-            },
-            finish_reason: null,
-          },
-        ],
-      };
-      console.log('Sending transfer chunk:', JSON.stringify(transferChunk, null, 2));
-      res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
-      return res.end(); // End the response after transfer
-    }
+if (shouldTransferCall) {
+  console.log('Attempting to transfer call');
+  const transferChunk = {
+    id: chatId,
+    object: 'chat.completion.chunk',
+    created: Math.floor(Date.now() / 1000),
+    model: 'dmapi',
+    choices: [
+      {
+        index: 0,
+        delta: {
+          content: null,
+          function_call: {
+            name: 'transferCall',
+            arguments: JSON.stringify({
+              destination: process.env.FORWARDING_PHONE_NUMBER
+            })
+          }
+        },
+        finish_reason: null,
+      },
+    ],
+  };
+  console.log('Sending transfer chunk:', JSON.stringify(transferChunk, null, 2));
+  res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
+  return res.end(); // End the response after transfer
+}
 
     if (shouldEndCall) {
       console.log('Attempting to end call');
