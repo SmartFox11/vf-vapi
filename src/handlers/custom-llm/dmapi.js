@@ -143,15 +143,20 @@ export const api = async (req, res) => {
         }
         case 'custom': {
           console.log('Custom trace received:', JSON.stringify(trace, null, 2));
-          if (trace.payload && trace.payload.type === 'handoff_human') {
-            console.log('Handoff human triggered');
-            shouldTransferCall = true
-          } else if (trace.payload && trace.payload.type === 'end_call') {
-            console.log('End call triggered');
-            shouldEndCall = true
-          }
-          break
+  if (trace.type === 'Handoff Human') {
+    console.log('Handoff human triggered');
+    shouldTransferCall = true;
+  } else if (trace.payload && trace.payload.type === 'end_call') {
+    console.log('End call triggered');
+    shouldEndCall = true;
+  }
+  break;
         }
+      case 'Handoff Human': {
+  console.log('Handoff human trace received');
+  shouldTransferCall = true;
+  break;
+}
         default: {
           console.log('Unknown trace type', trace)
         }
