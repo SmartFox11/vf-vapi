@@ -142,18 +142,18 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-         console.log('Custom trace received:', JSON.stringify(trace, null, 2));
-         if (trace.payload && trace.payload.type === 'handoff_human') {
+          console.log('Custom trace received:', JSON.stringify(trace, null, 2));
+          if (trace.payload && trace.payload.type === 'handoff_human') {
             console.log('Handoff human triggered');
             shouldTransferCall = true
           } else if (trace.payload && trace.payload.type === 'end_call') {
-           console.log('End call triggered');
-           shouldEndCall = true
+            console.log('End call triggered');
+            shouldEndCall = true
           }
           break
         }
         default: {
-          // console.log('Unknown trace type', trace)
+          console.log('Unknown trace type', trace)
         }
       }
     }
@@ -181,8 +181,9 @@ export const api = async (req, res) => {
           },
         ],
       };
+      console.log('Sending transfer chunk:', JSON.stringify(transferChunk, null, 2));
       res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
-      shouldEndCall = true;
+      return res.end(); // End the response after transfer
     }
 
     if (shouldEndCall) {
@@ -206,8 +207,8 @@ export const api = async (req, res) => {
           },
         ],
       }
+      console.log('Sending end call chunk:', JSON.stringify(endCallChunk, null, 2));
       res.write(`data: ${JSON.stringify(endCallChunk)}\n\n`)
-      res.write(`data: [DONE]\n\n`)
     } else {
       const finalChunk = {
         id: chatId,
@@ -224,11 +225,11 @@ export const api = async (req, res) => {
       }
       res.write(`data: ${JSON.stringify(finalChunk)}\n\n`)
     }
+    res.write(`data: [DONE]\n\n`)
     res.end()
     saveTranscript(userId)
   } catch (e) {
     console.error('Error in API:', e);
-    console.log(e)
-    res.status(500).json({ error: e })
+    res.status(500).json({ error: e.message })
   }
 }
