@@ -142,67 +142,49 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-  console.log('Custom trace received:', JSON.stringify(trace, null, 2));
-  if (trace.payload && trace.payload.type === 'transferCall') {
-    console.log('Transfer call triggered by user request');
-    shouldTransferCall = true;
-  } else if (trace.payload && trace.payload.type === 'end_call') {
-    console.log('End call triggered');
-    shouldEndCall = true;
-  }
-  break;
-}
+          console.log('Custom trace received:', JSON.stringify(trace, null, 2));
           
-case 'Handoff Human': {
-  console.log('Handoff human trace received');
-  console.log('Payload:', trace.payload);
-  try {
-    const payloadObj = JSON.parse(trace.payload);
-    if (payloadObj.type === 'transferCall') {
-      console.log('Transfer call triggered');
-      shouldTransferCall = true;
-    }
-  } catch (error) {
-    console.error('Error parsing payload:', error);
-    // Fallback: Wenn das Parsen fehlschlägt, nehmen wir an, dass eine Weiterleitung gewünscht ist
-    shouldTransferCall = true;
-  }
-  break;
-}
-
+          if (trace.payload && trace.payload.type === 'transferCall') {
+            console.log('Transfer call triggered');
+            shouldTransferCall = true;
+          } else {
+            console.error('Unknown payload type in custom trace:', trace.payload);
+          }
+          break;
+        }
         default: {
           console.log('Unknown trace type', trace)
         }
       }
     }
     
-if (shouldTransferCall) {
-  console.log('Attempting to transfer call');
-  const transferChunk = {
-    id: chatId,
-    object: 'chat.completion.chunk',
-    created: Math.floor(Date.now() / 1000),
-    model: 'dmapi',
-    choices: [
-      {
-        index: 0,
-        delta: {
-          content: null,
-          function_call: {
-            name: 'transferCall',
-            arguments: JSON.stringify({
-              destination: process.env.FORWARDING_PHONE_NUMBER
-            })
-          }
-        },
-        finish_reason: null,
-      },
-    ],
-  };
-  console.log('Sending transfer chunk:', JSON.stringify(transferChunk, null, 2));
-  res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
-  return res.end(); // End the response after transfer
-}
+    if (shouldTransferCall) {
+      console.log('Attempting to transfer call');
+      const transferChunk = {
+        id: chatId,
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: 'dmapi',
+        choices: [
+          {
+            index: 0,
+            delta: {
+              content: null,
+              function_call: {
+                name: 'transferCall',
+                arguments: JSON.stringify({
+                  destination: "+971547029423"  // Direkte Verwendung der Telefonnummer
+                })
+              }
+            },
+            finish_reason: null,
+          },
+        ],
+      };
+      console.log('Sending transfer chunk:', JSON.stringify(transferChunk, null, 2));
+      res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
+      return res.end(); // End the response after transfer
+    }
 
     if (shouldEndCall) {
       console.log('Attempting to end call');
