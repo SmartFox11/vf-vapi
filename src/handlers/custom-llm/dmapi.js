@@ -55,6 +55,7 @@ async function saveTranscript(user) {
 
 export const api = async (req, res) => {
   try {
+    console.log('API call received', JSON.stringify(req.body, null, 2));
     const {
       messages,
       call,
@@ -114,6 +115,7 @@ export const api = async (req, res) => {
 
     const chatId = `chatcmpl-${Math.floor(Date.now() / 1000)}`
     for (const trace of response.data) {
+      console.log('Processing trace:', JSON.stringify(trace, null, 2));
       switch (trace.type) {
         case 'text':
         case 'speak': {
@@ -140,7 +142,7 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-         console.log('Custom trace received:', trace);
+         console.log('Custom trace received:', JSON.stringify(trace, null, 2));
          if (trace.payload && trace.payload.type === 'handoff_human') {
             console.log('Handoff human triggered');
             shouldTransferCall = true
@@ -225,6 +227,7 @@ export const api = async (req, res) => {
     res.end()
     saveTranscript(userId)
   } catch (e) {
+    console.error('Error in API:', e);
     console.log(e)
     res.status(500).json({ error: e })
   }
