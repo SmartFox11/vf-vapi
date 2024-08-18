@@ -140,11 +140,13 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-          if (trace.payload && trace.payload.type === 'handoff_human') {
+         console.log('Custom trace received:', trace);
+         if (trace.payload && trace.payload.type === 'handoff_human') {
             console.log('Handoff human triggered');
             shouldTransferCall = true
           } else if (trace.payload && trace.payload.type === 'end_call') {
-            shouldEndCall = true
+           console.log('End call triggered');
+           shouldEndCall = true
           }
           break
         }
@@ -155,6 +157,7 @@ export const api = async (req, res) => {
     }
     
     if (shouldTransferCall) {
+      console.log('Attempting to transfer call');
       const transferChunk = {
         id: chatId,
         object: 'chat.completion.chunk',
@@ -181,6 +184,7 @@ export const api = async (req, res) => {
     }
 
     if (shouldEndCall) {
+      console.log('Attempting to end call');
       const endCallChunk = {
         id: chatId,
         object: 'chat.completion.chunk',
