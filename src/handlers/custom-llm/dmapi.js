@@ -152,9 +152,13 @@ export const api = async (req, res) => {
   }
   break;
         }
-      case 'Handoff Human': {
+case 'Handoff Human': {
   console.log('Handoff human trace received');
-  shouldTransferCall = true;
+  const payload = JSON.parse(trace.payload);
+  if (payload.type === 'transferCall') {
+    console.log('Transfer call triggered');
+    shouldTransferCall = true;
+  }
   break;
 }
         default: {
