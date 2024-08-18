@@ -141,6 +141,7 @@ export const api = async (req, res) => {
         }
         case 'custom': {
           if (trace.payload && trace.payload.type === 'handoff_human') {
+            console.log('Handoff human triggered');
             shouldTransferCall = true
           } else if (trace.payload && trace.payload.type === 'end_call') {
             shouldEndCall = true
