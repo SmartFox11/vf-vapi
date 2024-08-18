@@ -139,33 +139,55 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-          if (trace.payload && trace.payload.type === 'transfer_call') {
-            const transferChunk = {
-              id: chatId,
-              object: 'chat.completion.chunk',
-              created: Math.floor(Date.now() / 1000),
-              model: 'dmapi',
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    content: null,
-                    function_call: {
-                      name: 'transferCall',
-                      arguments: JSON.stringify({
-                        destination: '+971547029423' // Ersetzen Sie dies mit der tatsächlichen Weiterleitungsnummer
-                      })
-                    }
-                  },
-                  finish_reason: null,
-                },
-              ],
-            };
-            res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
-            shouldEndCall = true;
-          }
-          break;
-        }
+  if (trace.payload && trace.payload.type === 'transfer_call') {
+    const transferChunk = {
+      id: chatId,
+      object: 'chat.completion.chunk',
+      created: Math.floor(Date.now() / 1000),
+      model: 'dmapi',
+      choices: [
+        {
+          index: 0,
+          delta: {
+            content: null,
+            function_call: {
+              name: 'transferCall',
+              arguments: JSON.stringify({
+                destination: '+971547029423' // Ersetzen Sie dies mit der tatsächlichen Weiterleitungsnummer
+              })
+            }
+          },
+          finish_reason: null,
+        },
+      ],
+    };
+    res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
+    shouldEndCall = true;
+  } else if (trace.payload && trace.payload.type === 'end_call') {
+    const endCallChunk = {
+      id: chatId,
+      object: 'chat.completion.chunk',
+      created: Math.floor(Date.now() / 1000),
+      model: 'dmapi',
+      choices: [
+        {
+          index: 0,
+          delta: {
+            content: null,
+            function_call: {
+              name: 'endCall',
+              arguments: '{}'
+            }
+          },
+          finish_reason: null,
+        },
+      ],
+    };
+    res.write(`data: ${JSON.stringify(endCallChunk)}\n\n`);
+    shouldEndCall = true;
+  }
+  break;
+}
         default: {
           // console.log('Unknown trace type', trace)
         }
