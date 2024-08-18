@@ -142,16 +142,17 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-          console.log('Custom trace received:', JSON.stringify(trace, null, 2));
-  if (trace.type === 'Handoff Human') {
-    console.log('Handoff human triggered');
+  console.log('Custom trace received:', JSON.stringify(trace, null, 2));
+  if (trace.payload && trace.payload.type === 'transferCall') {
+    console.log('Transfer call triggered by user request');
     shouldTransferCall = true;
   } else if (trace.payload && trace.payload.type === 'end_call') {
     console.log('End call triggered');
     shouldEndCall = true;
   }
   break;
-        }
+}
+          
 case 'Handoff Human': {
   console.log('Handoff human trace received');
   console.log('Payload:', trace.payload);
@@ -168,6 +169,7 @@ case 'Handoff Human': {
   }
   break;
 }
+
         default: {
           console.log('Unknown trace type', trace)
         }
