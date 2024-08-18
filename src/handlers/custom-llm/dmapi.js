@@ -84,6 +84,7 @@ export const api = async (req, res) => {
 
     let response
     let shouldEndCall = false
+    let shouldTransferCall = false
 
     if (isNewConversation) {
       await deleteUserState(userId)
@@ -139,61 +140,45 @@ export const api = async (req, res) => {
           break
         }
         case 'custom': {
-  if (trace.payload && trace.payload.type === 'transfer_call') {
-    const transferChunk = {
-      id: chatId,
-      object: 'chat.completion.chunk',
-      created: Math.floor(Date.now() / 1000),
-      model: 'dmapi',
-      choices: [
-        {
-          index: 0,
-          delta: {
-            content: null,
-            function_call: {
-              name: 'transferCall',
-              arguments: JSON.stringify({
-                destination: '+971547029423' // Ersetzen Sie dies mit der tatsächlichen Weiterleitungsnummer
-              })
-            }
-          },
-          finish_reason: null,
-        },
-      ],
-    };
-    res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
-    shouldEndCall = true;
-  } else if (trace.payload && trace.payload.type === 'end_call') {
-    const endCallChunk = {
-      id: chatId,
-      object: 'chat.completion.chunk',
-      created: Math.floor(Date.now() / 1000),
-      model: 'dmapi',
-      choices: [
-        {
-          index: 0,
-          delta: {
-            content: null,
-            function_call: {
-              name: 'endCall',
-              arguments: '{}'
-            }
-          },
-          finish_reason: null,
-        },
-      ],
-    };
-    res.write(`data: ${JSON.stringify(endCallChunk)}\n\n`);
-    shouldEndCall = true;
-  }
-  break;
-}
+          if (trace.payload && trace.payload.type === 'handoff_human') {
+            shouldTransferCall = true
+          } else if (trace.payload && trace.payload.type === 'end_call') {
+            shouldEndCall = true
+          }
+          break
+        }
         default: {
           // console.log('Unknown trace type', trace)
         }
       }
     }
     
+    if (shouldTransferCall) {
+      const transferChunk = {
+        id: chatId,
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: 'dmapi',
+        choices: [
+          {
+            index: 0,
+            delta: {
+              content: null,
+              function_call: {
+                name: 'transferCall',
+                arguments: JSON.stringify({
+                  destination: process.env.FORWARDING_PHONE_NUMBER
+                })
+              }
+            },
+            finish_reason: null,
+          },
+        ],
+      };
+      res.write(`data: ${JSON.stringify(transferChunk)}\n\n`);
+      shouldEndCall = true;
+    }
+
     if (shouldEndCall) {
       const endCallChunk = {
         id: chatId,
@@ -205,87 +190,16 @@ export const api = async (req, res) => {
             index: 0,
             delta: {
               content: null,
-              function_call: null,
-              role: 'assistant',
-              tool_calls: [
-                {
-                  index: 0,
-                  id: 'call_RzSY2TxsyOKxuG27tyTshgq2',
-                  function: {
-                    arguments: '',
-                    name: 'endCall',
-                  },
-                  type: 'function',
-                },
-              ],
+              function_call: {
+                name: 'endCall',
+                arguments: '{}'
+              }
             },
             finish_reason: null,
-            logprobs: null,
           },
         ],
-        service_tier: null,
-        system_fingerprint: 'fp_661538dc1f',
-        usage: null,
       }
       res.write(`data: ${JSON.stringify(endCallChunk)}\n\n`)
-
-      const emptyChunk = {
-        id: chatId,
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: 'dmapi',
-        choices: [
-          {
-            index: 0,
-            delta: {
-              content: null,
-              function_call: null,
-              role: null,
-              tool_calls: [
-                {
-                  index: 0,
-                  id: null,
-                  function: {
-                    arguments: '{}',
-                    name: null,
-                  },
-                  type: null,
-                },
-              ],
-            },
-            finish_reason: null,
-            logprobs: null,
-          },
-        ],
-        service_tier: null,
-        system_fingerprint: 'fp_661538dc1f',
-        usage: null,
-      }
-      res.write(`data: ${JSON.stringify(emptyChunk)}\n\n`)
-
-      const closingChunk = {
-        id: chatId,
-        object: 'chat.completion.chunk',
-        created: Math.floor(Date.now() / 1000),
-        model: 'dmapi',
-        choices: [
-          {
-            index: 0,
-            delta: {
-              content: null,
-              function_call: null,
-              role: null,
-              tool_calls: null,
-            },
-            finish_reason: 'tool_calls',
-            logprobs: null,
-          },
-        ],
-        service_tier: null,
-        system_fingerprint: 'fp_661538dc1f',
-        usage: null,
-      }
-      res.write(`data: ${JSON.stringify(closingChunk)}\n\n`)
       res.write(`data: [DONE]\n\n`)
     } else {
       const finalChunk = {
